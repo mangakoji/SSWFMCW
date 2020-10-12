@@ -4,6 +4,11 @@
 //
 //J6Ts  :start wt RTL
 
+`include "../MISC/define.vh"
+`ifndef FPGA_COMPILE
+    `include "../MISC/SQRT.v"
+    `include "../MISC/sin_tbl_s11_s11.v"
+`endif
 `default_nettype none
 module SSWFMCW
 (
@@ -16,23 +21,6 @@ module SSWFMCW
     , output wire       TXD_o
     , output wire       CMP_o   //match H
 ) ;
-    `define ack always@(posedge CK_i or negedge XARST_i)
-    `define xar if(~XARST_i)
-    `define cke if(CK_EE_i)
-    `define b begin
-    `define e end
-    `define r reg
-    `define w wire
-    `define a assign
-    `define s signed
-    `define Ds $signed
-    `define int integer
-    `define func function
-    `define efunc endfunc
-    `define gen generate
-    `define egen endgenerate
-    `define in input
-    `define out output
     function integer log2 ;
         input integer value ;
     begin
