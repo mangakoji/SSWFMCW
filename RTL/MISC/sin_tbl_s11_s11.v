@@ -29,11 +29,11 @@ module SIN_TBL_s11_s11 #(
                         12 
         ;
 
-        input                           CK_i    ;
+        input   tri0                    CK_i    ;
         input   tri0                    XARST_i ;
         input   tri1                    EN_CK_i ;
         input   tri0    [11 :0]         DAT_i     ; //2's -h800 0 +7FFF
-        output          [C_QQ_W-1 :0]    SIN_o     ; //2's -h800 0 +h800
+        output  wire    [C_QQ_W-1 :0]   SIN_o     ; //2's -h800 0 +h800
         // main
         wire    [ 9 :0] sin_adr         ;
         wire            down_curve      ;
