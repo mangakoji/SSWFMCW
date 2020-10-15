@@ -1,6 +1,7 @@
 // SIN_TBL_s11_s11.v
 //
 //
+//KAFw          :touch port config
 //170522su      :debug C_XCLIP_1POINT0
 //170516tu      :add EN_CK_i , CK&XARST add tail suffix _i
 //               mod  C_1POINT0_ON  -> C_XCLIP_1POINT0
@@ -11,29 +12,25 @@
 //                retruct external rom ~~~_inc.v
 //151215tu      :mod selectanble to clip 1.0
 //151213su      :1st.
-module SIN_TBL_s11_s11 #(
-        parameter C_XCLIP_1POINT0 = 0 //0: CLIP
-                                      //1: non CLIP
-)(
-          CK_i
-        , XARST_i
-        , EN_CK_i
-        , DAT_i   //2's -h800 0 +7FFF
-        , SIN_o   //2's -h800 0 +h800
-);
 
-        localparam integer C_QQ_W = 
+`include "../MISC/define.vh"
+module SIN_TBL_s11_s11 
+#(
+      parameter C_XCLIP_1POINT0 = 0 //0: CLIP
+                                    //1: non CLIP
+    , localparam integer C_QQ_W = 
                 (C_XCLIP_1POINT0 !=0) ? //0:clip 1:non clip
                         13
                 :
                         12 
-        ;
+)(
+      input   tri0                    CK_i  
+    , input   tri0                    XARST_i
+    , input   tri1                    EN_CK_i
+    , input   tri0    [11 :0]         DAT_i     //2's -h800 0 +7FFF
+    , output  wire    [C_QQ_W-1 :0]   SIN_o     //2's -h800 0 +h800
+);
 
-        input   tri0                    CK_i    ;
-        input   tri0                    XARST_i ;
-        input   tri1                    EN_CK_i ;
-        input   tri0    [11 :0]         DAT_i     ; //2's -h800 0 +7FFF
-        output  wire    [C_QQ_W-1 :0]   SIN_o     ; //2's -h800 0 +h800
         // main
         wire    [ 9 :0] sin_adr         ;
         wire            down_curve      ;
@@ -126,16 +123,13 @@ module SIN_TBL_s11_s11 #(
 endmodule // SIN_TBL_s11_s11
 
 // 2ck dly
-module SIN_ROM_4s11_s11 (
-          CK_i
-        , EN_CK_i
-        , ADR_i
-        , QQ_o
+module SIN_ROM_4s11_s11 
+(
+      input tri1        CK_i
+    , input tri1        EN_CK_i
+    , input tri0[ 9 :0] ADR_i
+    , output `w[ 8 :0]  QQ_o
 ) ;
-        input           CK_i      ;
-        input           EN_CK_i ;
-        input   [ 9 :0] ADR_i   ;
-        output  [ 8 :0] QQ_o    ;
 
 
         reg     [ 9 :0] ROM_ADR ;

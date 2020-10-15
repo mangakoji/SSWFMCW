@@ -35,7 +35,7 @@ module SSWFMCW
     `ack
         `xar
         `b
-            ADD_Ds <= 0 ;
+            ADD_Ds <= C_ADD_MIN<<12 ;
             DN_XUP <= 1'b0 ;
         `e else
         `b  if(~DN_XUP)
@@ -221,40 +221,33 @@ module TB_SSWFMCW
             XARST_i <= 1'b1 ;
     end
 
-    
-    `w    TXD ;
-    `w    CMP_o   ;
+    `w      TXSP_o          ;
+    `w      MIC_CK_o        ;
+    `r[1:0] MICs_DAT        ;
+    `w[1:0] HEAD_PHONEs_o   ;
     SSWFMCW
-        SSWFMCW_TX
+        SSWFMCW
         (
-              .CK_i             ( CK_i         )
-            , .XARST_i          ( XARST_i      )
-            , .CK_EE_i          ( CK_EE_i      )
-            , .RXD_i            ()
-            , .BUS_RX_MODE_i    ( 1'b0         )
-            , .TXD_o            ( TXD           )
-            , .CMP_o            ()
-        ) 
-    ;
-    SSWFMCW
-        SSWFMCW_RX
-        (
-              .CK_i             ( CK_i          )
+              .CK_i             ( CK_i          )//48MHz
             , .XARST_i          ( XARST_i       )
-            , .CK_EE_i          ( CK_EE_i       )
-            , .RXD_i            ( TXD           )
-            , .BUS_RX_MODE_i    ( 1'b1          )
-            , .TXD_o            ()
-            , .CMP_o            ( CMP_o         )
+            , .TXSP_o           ( TXSP_o        )
+            , .MIC_CK_o         ( MIC_CK_o      )
+            , .MICs_DAT_i       ( MICs_DAT      )
+            , .HEAD_PHONEs_o    ( HEAD_PHONEs_o )
         ) 
     ;
 
-    integer ii ;
+    integer hh,vv,ff ;
     initial
     `b
-        for(ii=0;ii<=2**9;ii=ii+1)
-        `b
-            repeat(10) @(posedge CK_i) ;
+        MICs_DAT <= 2'b11 ;
+        repeat(100) @(`pe CK_i) ;
+        for(ff=0;ff<=1;ff=ff+1)
+        `b  for(vv=0;vv<=2**10;vv=vv+1)
+            `b  for(hh=0;hh<=2**10;hh=hh+1)
+                `b  @(posedge CK_i) ;
+                `e
+            `e
         `e
         repeat(100) @(posedge CK_i) ;
         $stop ;
