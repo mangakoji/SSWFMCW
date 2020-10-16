@@ -38,14 +38,14 @@ module SSWFMCW
             ADD_Ds <= C_ADD_MIN<<12 ;
             DN_XUP <= 1'b0 ;
         `e else
-        `b  if(~DN_XUP)
-            `b  if(ADD_Ds >= {C_ADD_MAX,12'h0})
+        `b  if(~DN_XUP) //2bc_000=2867200
+            `b  if(ADD_Ds >= {C_ADD_MAX,12'h0})//26'h37F_B000
                 `b  DN_XUP <= 1'b1 ;
                     ADD_Ds <= ADD_Ds -1 ;
                 `e else
                     ADD_Ds <= ADD_Ds + 1 ;
             `e else
-            `b  if(ADD_Ds <= {C_ADD_MIN,12'h0})
+            `b  if(ADD_Ds <= {C_ADD_MIN,12'h0})//26'h353_F00
                 `b  DN_XUP <= 1'b0 ;
                     ADD_Ds <= ADD_Ds + 1 ;
                 `e else
@@ -62,7 +62,7 @@ module SSWFMCW
     // sin wave gen
     `w`s[11:0] COS_WAVEs ;
     `w`s[11:0] SIN_WAVEs ;
-    `w`s[11:0] cos_ctr_s = 
+    `w`s[11:0] sin_ctr_s = 
                     { 
                           ~( ^ WAVE_CTRs[23:22])
                         , ~    WAVE_CTRs[22]
@@ -74,7 +74,7 @@ module SSWFMCW
         (
               .CK_i         ( CK_i              )
             , .XARST_i      ( XARST_i           )
-            , .DAT_i        ( cos_ctr_s         )//2's -h800 0 +7FFF
+            , .DAT_i        ( WAVE_CTRs[23:12]  )//2's -h800 0 +7FFF
             , .SIN_o        ( COS_WAVEs         )//2's -h800 0 +h800
         )
     ;
@@ -83,7 +83,7 @@ module SSWFMCW
         (
               .CK_i         ( CK_i              )
             , .XARST_i      ( XARST_i           )
-            , .DAT_i        ( WAVE_CTRs[23:12]  )//2's -h800 0 +7FFF
+            , .DAT_i        ( sin_ctr_s         )//2's -h800 0 +7FFF
             , .SIN_o        ( SIN_WAVEs         )//2's -h800 0 +h800
         )
     ;
@@ -94,8 +94,8 @@ module SSWFMCW
             TXSP_DSs <= 13'b1_1000_0000_0000 ;
         else
             TXSP_DSs <= 
-                  {1'b0 ,TXSP_DSs[11:0]} 
-                + {~COS_WAVEs[11],COS_WAVEs[10:0]} 
+                  {1'b0 , TXSP_DSs[11:0]} 
+                + {1'b0 , ~COS_WAVEs[11],COS_WAVEs[10:0]} 
             ;
     `a TXSP_o = TXSP_DSs[12] ;
     
@@ -236,15 +236,70 @@ module TB_SSWFMCW
             , .HEAD_PHONEs_o    ( HEAD_PHONEs_o )
         ) 
     ;
+    // 48MHz/2/pi/256=29.841kHz
+    `r[21:0] TX_IIRs ;
+    `w `s[14:0] TX_diff_s = {1'b0, {14{TXSP_o}}} - {1'b0 ,TX_IIRs[21:8]} ;
+    `ack
+        `xar
+            TX_IIRs <= 22'h20_0000 ;
+        else
+            TX_IIRs <= `Ds({1'b0,TX_IIRs}) + `Ds( TX_diff_s ) ;
+    `r MIC_CK_D ;
+    `ack
+        `xar
+            MIC_CK_D <= 1'b0 ;
+        else
+            MIC_CK_D <= MIC_CK_o ;
+    `w MIC_CK_EE = ~MIC_CK_o & MIC_CK_D ;
+    `r[14:0]MIC_DSs ;
+    `ack
+        `xar
+            MIC_DSs <= 0 ;
+        else if( MIC_CK_EE )
+            MIC_DSs <= {1'b0 , MIC_DSs[13:0]} + {1'b0,TX_IIRs[21:8]} ;
+
+    //1m -> 1/340[m/s]=2.94ms=> 2.94ms*48MHz=144,117ck
+    //2m -> 288,286ck
+    `r [288_235:0] DLYs ;
+    `ack
+        `xar
+            DLYs <= 0 ;
+        else
+            DLYs <= {DLYs,MIC_DSs[14]} ;
+    `w CH0 = DLYs[144_116] ;
+    `w CH1 = DLYs[288_235] ;
+
+    `w[7:0]PHONEs_LPFED [0:1];
+    `gen
+    `b
+        genvar gi;
+        for(gi=0;gi<2;gi=gi+1)
+        `b :gen_PHONE
+            `r[15:0] PHONE_IIRs ;
+            `ack
+                `xar
+                    PHONE_IIRs <= 0;
+                else
+                    PHONE_IIRs <= 
+                        `Ds({1'b0 , PHONE_IIRs}) 
+                        + `Ds(
+                            {1'b0,{8{HEAD_PHONEs_o[gi]}}}
+                            - {1'b0,PHONE_IIRs[15:8]}
+                        )
+                    ;
+            `a PHONEs_LPFED[gi] = PHONE_IIRs[15:8] ;
+        `e
+    `e `egen 
+
 
     integer hh,vv,ff ;
     initial
     `b
-        MICs_DAT <= 2'b11 ;
+        force MICs_DAT = {CH1,CH0} ;
         repeat(100) @(`pe CK_i) ;
-        for(ff=0;ff<=1;ff=ff+1)
-        `b  for(vv=0;vv<=2**10;vv=vv+1)
-            `b  for(hh=0;hh<=2**10;hh=hh+1)
+        for(ff=0;ff<=6;ff=ff+1)
+        `b  for(vv=0;vv<=100;vv=vv+1)
+            `b  for(hh=0;hh<=10_000;hh=hh+1)
                 `b  @(posedge CK_i) ;
                 `e
             `e
