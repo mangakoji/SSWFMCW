@@ -132,21 +132,22 @@ module SSWFMCW
                 else
                     if(MIC_EE)
                         MIC_Ds <= {MIC_Ds,MICs_DAT_i[gi]} ;
-            `r`s[24:0]IIRs_COS ;
-            `r`s[24:0]IIRs_SIN ;
+            // s11+12
+            `r`s[23:0]IIRs_COS ;
+            `r`s[23:0]IIRs_SIN ;
             // MIC_IIR // for test
-            `w`s[25:0] COS_diff_s =
+            `w`s[13:0] COS_diff_s = // s13
                     (MIC_Ds[1])
-                    ?   (`Ds(IIRs_COS[24:13]) + `Ds(COS_WAVEs))
-                    :   (`Ds(IIRs_COS[24:13]) - `Ds(COS_WAVEs)) 
+                    ?    ( `Ds(COS_WAVEs) - `Ds(IIRs_COS[23:12]))
+                    :    (-`Ds(COS_WAVEs) - `Ds(IIRs_COS[23:12])) 
             ;
-            `w`s[25:0] SIN_diff_s =
+            `w`s[13:0] SIN_diff_s =
                     (MIC_Ds[1])
-                    ?   (`Ds(IIRs_SIN[24:13]) + `Ds(SIN_WAVEs))
-                    :   (`Ds(IIRs_SIN[24:13]) - `Ds(SIN_WAVEs)) 
+                    ?   ( `Ds(SIN_WAVEs) - `Ds(IIRs_SIN[23:12]))
+                    :   (-`Ds(SIN_WAVEs) - `Ds(IIRs_SIN[23:12])) 
             ;
-            `r`s[12:0] COS_DIFFs ;
-            `r`s[12:0] SIN_DIFFs ;
+            `r`s[13:0] COS_DIFFs ;
+            `r`s[13:0] SIN_DIFFs ;
             // fc=983Hz = 48MHz/((2**13)*2*pi)
             `ack
                 `xar
@@ -155,14 +156,14 @@ module SSWFMCW
                     IIRs_COS <= 0 ;
                     IIRs_SIN <= 0 ;
                 `e else
-                `b  COS_DIFFs <= COS_diff_s[25:13] ;
-                    SIN_DIFFs <= SIN_diff_s[25:13] ;
-                    IIRs_COS <= `Ds(IIRs_COS) + `Ds(COS_DIFFs) ;
-                    IIRs_SIN <= `Ds(IIRs_SIN) + `Ds(SIN_DIFFs) ;
+                `b  COS_DIFFs <= COS_diff_s ;
+                    SIN_DIFFs <= SIN_diff_s ;
+                    IIRs_COS <= `Ds(IIRs_COS) + `Ds(COS_diff_s) ;
+                    IIRs_SIN <= `Ds(IIRs_SIN) + `Ds(SIN_diff_s) ;
                 `e
-            `w[21:0] COS_squ_s = `Ds(IIRs_COS[24:13]) * `Ds(IIRs_COS[24:13]) ;
+            `w[21:0] COS_squ_s = `Ds(IIRs_COS[23:12]) * `Ds(IIRs_COS[23:12]) ;
             `r[21:0] COS_SQUs ;
-            `w[21:0] SIN_squ_s = `Ds(IIRs_SIN[24:13]) * `Ds(IIRs_SIN[24:13]) ;
+            `w[21:0] SIN_squ_s = `Ds(IIRs_SIN[23:12]) * `Ds(IIRs_SIN[23:12]) ;
             `r[21:0] SIN_SQUs ;
             `r[22:0] SQUs ;
             `ack
