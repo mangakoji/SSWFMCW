@@ -1,6 +1,7 @@
-// SIN_TBL_s11_s11.v
+// SIN_S11_S11.v
 //
 //
+//KAHs          :add 1dly and mach modern coding rule
 //KAFw          :touch port config
 //170522su      :debug C_XCLIP_1POINT0
 //170516tu      :add EN_CK_i , CK&XARST add tail suffix _i
@@ -20,33 +21,35 @@ module SIN_S11_S11
     , `in tri0          XARST_i
     , `in tri0[7:0]     B_IN_DAT_DLYs_i
     , `in tri0[11:0]    DATs_i     //2's -h800 0 +7FFF
-    , `out`w  [11:0]    SINs_o     //2's -h800 0 +h800
+    , `out`w  [11:0]    SINs_o     //2's -h7ff 0 +h7FF
     , `out`w[7:0]       B_OUT_DAT_DLYs_o
 ) ;
-    localparam C_DAT_DLYs = 3 ;
+    localparam C_DAT_DLYs = 1 ;
 
     // main
     `w down_curve = DATs_i[10] ;
     `w`s[ 9:0] sin_adr_s = ( down_curve ) ? -DATs_i[ 9 :0] : DATs_i[9 :0] ;
 
-    // 2CK_i dly
+    // 3CK_i dly
     `w[ 8:0] SIN_ROM_DATs   ;
+    `w[ 7:0] B_ROM_DAT_DLYs ;
     SIN_ROM_S11_S11
         SIN_ROM_S11_S11
-        (     .CK_i         ( CK_i          )
-            , .XARST_i      ( XARST_i       )
-            , .ADRs_i       ( sin_adr_s     )
-            , .QQs_o        ( SIN_ROM_DATs  )
+        (     .CK_i             ( CK_i              )
+            , .XARST_i          ( XARST_i           )
+            , .B_IN_DAT_DLYs_i  ( B_IN_DAT_DLYs_i   )
+            , .ADRs_i           ( sin_adr_s         )
+            , .QQs_o            ( SIN_ROM_DATs      )
+            , .B_OUT_DAT_DLYs_o ( B_ROM_DAT_DLYs    )
         ) 
     ;
-
     `r[3*10-1:0] SIN_ADRs_Ds     ;
     `ack
         `xar
             SIN_ADRs_Ds <= 0 ;
         else
             SIN_ADRs_Ds <= {SIN_ADRs_Ds , sin_adr_s} ;
-    `w`s[12:0] sin_dat_s = SIN_ROM_DATs + {SIN_ADRs_Ds[1*10+:10] , 1'b0} ;
+    `w`s[12:0] sin_dat_s = SIN_ROM_DATs + {SIN_ADRs_Ds[2*10+:10] , 1'b0} ;
 
     `r[ 2:0]    MINUS_Ds    ;
     `r[ 2:0]    MAX_MIN_Ds  ;
@@ -56,15 +59,15 @@ module SIN_S11_S11
         `xar
                                     SINs <= 0 ;
         else
-            if( ZERO_Ds[1] )
+            if( ZERO_Ds[2] )
                                     SINs <= 12'd0 ;
             else
-            `b  if(MAX_MIN_Ds[1] | (|sin_dat_s[12:11]))
-                `b  if( MINUS_Ds[1])
+            `b  if(MAX_MIN_Ds[2] | (|sin_dat_s[12:11]))
+                `b  if( MINUS_Ds[2])
                                     SINs <= -12'h7FF ;
                     else
                                     SINs <=  12'h7FF ;
-                `e else if( MINUS_Ds[1] )
+                `e else if( MINUS_Ds[2] )
                                     SINs <= -sin_dat_s ;
                 else
                                     SINs <=  sin_dat_s ;
@@ -82,7 +85,7 @@ module SIN_S11_S11
             MAX_MIN_Ds  <= {MAX_MIN_Ds , (DATs_i[9:0] == 'd0)} ;
             ZERO_Ds     <= {ZERO_Ds    , (DATs_i[10:0] == 'd0) } ;
         `e
-    `a B_OUT_DAT_DLYs_o = B_IN_DAT_DLYs_i + C_DAT_DLYs ;
+    `a B_OUT_DAT_DLYs_o = B_ROM_DAT_DLYs + C_DAT_DLYs ;
 endmodule // SIN_S11_S11
 
 
@@ -90,9 +93,12 @@ endmodule // SIN_S11_S11
 module SIN_ROM_S11_S11
 (     `in tri1          CK_i
     , `in tri1          XARST_i
+    , `in tri0[7:0]     B_IN_DAT_DLYs_i
     , `in tri0[ 9:0]    ADRs_i
     , `out`w  [ 8:0]    QQs_o
+    , `out`w[7:0]       B_OUT_DAT_DLYs_o
 ) ;
+    localparam C_DAT_DLYs = 3 ;
     `r [ 9:0]ROM_ADRs ;
     `ack
         `xar
@@ -1133,6 +1139,11 @@ module SIN_ROM_S11_S11
                 10'h3FE : QQs <= 9'h004 ;
                 10'h3FF : QQs <= 9'h002 ;
             endcase
-    `a QQs_o = QQs ;
+    `r[ 8:0] QQs_D ;
+    `ack
+        `xar QQs_D <= 0 ;
+        else QQs_D <= QQs ;
+    `a QQs_o = QQs_D ;
+    `a B_OUT_DAT_DLYs_o = B_IN_DAT_DLYs_i + C_DAT_DLYs ;
 endmodule // SIN_ROM_S11_S11
 
