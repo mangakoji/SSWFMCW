@@ -7,14 +7,13 @@
 `include "../MISC/define.vh"
 `ifndef FPGA_COMPILE
     `include "../MISC/SQRT.v"
-    `include "../MISC/sin_tbl_s11_s11.v"
+    `include "../MISC/SIN_S11_S11.v"
 `endif
 `default_nettype none
 module SSWFMCW
 (
       `in tri0      CK_i          //48MHz
     , `in tri1      XARST_i
-    , `in tri1      CK_EE_i
     , `out`w       TXSP_o
     , `out`w       MIC_CK_o
     , `in tri0[1:0] MICs_DAT_i
@@ -69,22 +68,20 @@ module SSWFMCW
                         ,      WAVE_CTRs[21:12]
                     }
     ;
-    SIN_TBL_s11_s11 
+    SIN_S11_S11
         COS_TBL
-        (
-              .CK_i         ( CK_i              )
+        (    .CK_i          ( CK_i              )
             , .XARST_i      ( XARST_i           )
-            , .DAT_i        ( WAVE_CTRs[23:12]  )//2's -h800 0 +7FFF
-            , .SIN_o        ( COS_WAVEs         )//2's -h800 0 +h800
+            , .DATs_i       ( WAVE_CTRs[23:12]  )//2's -h800 0 +7FFF
+            , .SINs_o       ( COS_WAVEs         )//2's -h800 0 +h800
         )
     ;
-    SIN_TBL_s11_s11 
+    SIN_S11_S11
         SIN_TBL
-        (
-              .CK_i         ( CK_i              )
+        (     .CK_i         ( CK_i              )
             , .XARST_i      ( XARST_i           )
-            , .DAT_i        ( sin_ctr_s         )//2's -h800 0 +7FFF
-            , .SIN_o        ( SIN_WAVEs         )//2's -h800 0 +h800
+            , .DATs_i       ( sin_ctr_s         )//2's -h800 0 +7FFF
+            , .SINs_o       ( SIN_WAVEs         )//2's -h800 0 +h800
         )
     ;
     // TX SP DS ;
