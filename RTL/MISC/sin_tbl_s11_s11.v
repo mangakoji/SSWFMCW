@@ -18,7 +18,7 @@ module SIN_TBL_s11_s11
 #(
       parameter C_XCLIP_1POINT0 = 0 //0: CLIP
                                     //1: non CLIP
-    , localparam integer C_QQ_W = 
+    , parameter integer C_QQ_W = 
                 (C_XCLIP_1POINT0 !=0) ? //0:clip 1:non clip
                         13
                 :
