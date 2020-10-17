@@ -185,13 +185,13 @@ module SSWFMCW
                     , .QQs_o    ( RMSs      ) //12
                 ) 
             ;
-            `r[12:0] EP_DSs ;
+            `r[11:0] EP_DSs ;
             `ack
                 `xar
-                    EP_DSs <= 13'b1_1000_0000_0000 ;
+                    EP_DSs <= 12'b1000_0000_0000 ;
                 else
-                    EP_DSs <= {1'b0 ,EP_DSs[11:0]} + {RMSs[10:0]} ;
-            `a HEAD_PHONEs_o[gi] = EP_DSs[10] ;
+                    EP_DSs <= {1'b0 ,EP_DSs[10:0]} + {RMSs[10:0]} ;
+            `a HEAD_PHONEs_o[gi] = EP_DSs[11] ;
         `e
     `egen
 endmodule
