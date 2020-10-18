@@ -2,6 +2,7 @@
 //  SSWFMCW()
 //
 //
+//KAIu :add COS out
 //KAHs :may be done
 //KABu :start wt RTL
 
@@ -12,12 +13,13 @@
 `default_nettype none
 module SSWFMCW
 (
-      `in tri0      CK_i          //48MHz
-    , `in tri1      XARST_i
-    , `out`w        TXSP_o
-    , `out`w        MIC_CK_o
-    , `in tri0[1:0] MICs_DAT_i
-    , `out`w[1:0]   HEAD_PHONEs_o 
+      `in tri0       CK_i          //48MHz
+    , `in tri1       XARST_i
+    , `out`w         TXSP_o
+    , `out`w[11:0]  TX_COS_WAVEs_o //ofs
+    , `out`w         MIC_CK_o
+    , `in tri0[1:0]  MICs_DAT_i
+    , `out`w[1:0]    HEAD_PHONEs_o 
 ) ;
     `func `int log2 ;
         `in `int value ;
@@ -76,6 +78,7 @@ module SSWFMCW
                     {1'b0 , ~COS_WAVEs[11] , COS_WAVEs[10:0]} 
                 ;
     `a TXSP_o = TXSP_DSs[12] ;
+    `a TX_COS_WAVEs_o = {COS_WAVEs[11],COS_WAVEs[10:0]} ;
     
     // MIC_CLOCK
     `r[2:0]MIC_CTRs ;
@@ -89,11 +92,9 @@ module SSWFMCW
         `b  if(&(MIC_CTRs|~(3'd5)))
             `b  MIC_CTRs <= 0;
                 MIC_CK <= ~ MIC_CK ;
-                MIC_EE <= MIC_CK ;
             `e else
-            `b  MIC_CTRs <= MIC_CTRs + 1 ;
-                MIC_EE <= 1'b0 ;
-            `e
+                MIC_CTRs <= MIC_CTRs + 1 ;
+            MIC_EE <= (MIC_CTRs==3'd4) & ~MIC_CK ;
         `e
     `a MIC_CK_o = MIC_CK ;
     // HeadPhone DS
