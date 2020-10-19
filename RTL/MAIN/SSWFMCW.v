@@ -13,12 +13,12 @@
 `default_nettype none
 module SSWFMCW
 (
-      `in tri0       CK_i          //48MHz
-    , `in tri1       XARST_i
+      `in`tri1       CK_i          //48MHz
+    , `in `tri1       XARST_i
     , `out`w         TXSP_o
     , `out`w[11:0]  TX_COS_WAVEs_o //ofs
     , `out`w         MIC_CK_o
-    , `in tri0[1:0]  MICs_DAT_i
+    , `in`tri0[1:0]  MICs_DAT_i
     , `out`w[1:0]    HEAD_PHONEs_o 
 ) ;
     `func `int log2 ;

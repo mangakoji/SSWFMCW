@@ -1,5 +1,6 @@
 // TANG_PRiMER.v
 // AnLogic FPGA IDE Tang Dynasty
+// KAJm : mod for SSWFMCW
 // K3Fu :1st
 
 `default_nettype none
@@ -11,7 +12,6 @@ module TANG_PRiMER
     , `out `w zLED_R_o
     , `out `w zLED_G_o
     , `out `w zLED_B_o
-
     , `io `w J2_01 //B5_P
     , `io `w J2_02 //     B24_N
     , `io `w J2_03 //B5_N
@@ -142,69 +142,77 @@ module TANG_PRiMER
             , .extlock      ( PLL_LOCKED )
         )
     ;
-    `lp C_F_CK = 135_000_000 ;
+    `lp C_F_CK = 48_000_000 ;
 
-    `r[2:0]XRST_135M_Ds ;
-    `al@(`pe CK135M or `ne PLL_LOCKED)
+    `r[2:0]XRST_48M_Ds ;
+    `al@(`pe CK48M or `ne PLL_LOCKED)
         if( ~ PLL_LOCKED)
-            XRST_135M_Ds <= 0 ;
+            XRST_48M_Ds <= 0 ;
         else
-            XRST_135M_Ds <= {XRST_135M_Ds,1'b1} ;
-    `w XARST_135M = XRST_135M_Ds[2] ;
+            XRST_48M_Ds <= {XRST_48M_Ds,1'b1} ;
+    `w XARST_48M = XRST_48M_Ds[2] ;
 
-
-    `w VIDEO_o ;
-    `w SOUND_o ;
-    `w [17:0]LEDs_ON_o ;
-    PLANET_EMP_TOP
-        #(      .C_F_CK     ( C_F_CK    )
-        ) PLANET_EMP_TOP
+    `w          T_TXSP_o        ;
+    `w[11:0]    TX_COS_WAVEs_o  ;//ofs
+    `w          MIC_CK_o        ;
+    `w[1:0]     MICs_DAT_i      ;
+    `a MICs_DAT_i = {J2_02 , J2_04} ;
+    `w[1:0]     HEAD_PHONEs_o  ;
+    SSWFMCW
+        SSWFMCW
         (
-              .CK_i         ( CK135M        )
-            , .XARST_i      ( XARST_135M    )
-            , .XPSW_i       ( zUSR_KEY_i    )
-            , .VIDEO_o      ( VIDEO_o       )
-            , .SOUND_o      ( SOUND_o       )
-            , .LEDs_ON_o    ( LEDs_ON_o     )
-        )                    
+              .CK_i             ( CK48M             )//48MHz
+            , .XARST_i          ( XARST_48M         )
+            , .TXSP_o           ( T_TXSP_o          )
+            , .TX_COS_WAVEs_o   ( TX_COS_WAVEs_o    )//ofs
+            , .MIC_CK_o         ( MIC_CK_o          )
+            , .MICs_DAT_i       ( MICs_DAT_i        )
+            , .HEAD_PHONEs_o    ( HEAD_PHONEs_o     )
+        ) 
     ;
-    `a J2_06 = 1'b0 ;
-    `a J2_08 = VIDEO_o ;
+    `w TX_SP_o = TX_COS_WAVEs_o[11] ;
+    `a J3_02 = TX_SP_o ;
+    `a J2_06 = T_TXSP_o ;
+    `a {J2_08 , J2_10} = HEAD_PHONEs_o ;
+
 //    assign zLED_R_o = ~ tempo_led ;
 //    assign zLED_G_o = ~ test_score_led[0]   ;
 //    assign zLED_B_o = ~ timing_1ms ;
-    assign J2_02 =   SOUND_o ;
-    assign J2_04 = ~ SOUND_o ;
 
     `include "MISC/TIMESTAMP.v"
     `w[8*128-1:0] BJO_REGss ;
     `w[8*128-1:0] BJ_REGss ;
     `a BJO_REGss[8*(128-4) +: 32] =  C_TIMESTAMP ;
-    `a BJO_REGss[17:0]          = LEDs_ON_o ;
+    `r[25:0] BLINK_CTRs ;
+    `a BJO_REGss[17:0]          = BLINK_CTRs[25:20] ;
 //    `a BJO_REGss = ~0 ;
     JTAG_REGS
         JTAG_REGS
         (
-              .CK_i     ( CK135M         )
-            , .XARST_i  ( XARST_135M     )
+              .CK_i     ( CK48M         )
+            , .XARST_i  ( XARST_48M     )
             , .CK_EE_i  ( 1'b1          )
             , .DATss_i  ( BJO_REGss     )
             , .REGss_o  ( BJ_REGss      )
         ) 
     ;
     `r [6:0] REG_CTRs ;
-    `al@(`pe CK135M or `ne XARST_135M)
-        if( ~ XARST_135M)
+    `al@(`pe CK48M or `ne XARST_48M)
+        if( ~ XARST_48M)
             REG_CTRs <= 0 ;
         else
             REG_CTRs <= REG_CTRs + 1 ;
     `r[7:0] REG_SGMs ;
-    `al@(`pe CK135M or `ne XARST_135M)
-        if( ~ XARST_135M)
+    `al@(`pe CK48M or `ne XARST_48M)
+        if( ~ XARST_48M)
             REG_SGMs <= 0 ;
         else
             REG_SGMs <= REG_SGMs + (BJ_REGss >> (REG_CTRs*8)) ;
-    `a J2_10 = ^ REG_SGMs ;
+    `a J2_12 = ^ REG_SGMs ;
+    `al@(`pe CK48M or `ne XARST_48M)
+        if( ~ XARST_48M )   BLINK_CTRs <= 0 ;
+        else                BLINK_CTRs <= BLINK_CTRs + 1 ;
+    `a zLED_R_o = BLINK_CTRs[25] ;
     `a zLED_G_o = BJ_REGss[0] ;
 endmodule
 //TANG_PRiMER ()

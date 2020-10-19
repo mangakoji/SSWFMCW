@@ -17,10 +17,10 @@
 `include "../MISC/define.vh"
 module SIN_S11_S11
 (
-      `in tri0          CK_i  
-    , `in tri0          XARST_i
-    , `in tri0[7:0]     B_IN_DAT_DLYs_i
-    , `in tri0[11:0]    DATs_i     //2's -h800 0 +7FFF
+      `in`tri0          CK_i  
+    , `in`tri0          XARST_i
+    , `in`tri0[7:0]     B_IN_DAT_DLYs_i
+    , `in`tri0[11:0]    DATs_i     //2's -h800 0 +7FFF
     , `out`w  [11:0]    SINs_o     //2's -h7ff 0 +h7FF
     , `out`w[7:0]       B_OUT_DAT_DLYs_o
 ) ;
@@ -91,10 +91,10 @@ endmodule // SIN_S11_S11
 
 // 2ck dly
 module SIN_ROM_S11_S11
-(     `in tri1          CK_i
-    , `in tri1          XARST_i
-    , `in tri0[7:0]     B_IN_DAT_DLYs_i
-    , `in tri0[ 9:0]    ADRs_i
+(     `in`tri1          CK_i
+    , `in`tri1          XARST_i
+    , `in`tri0[7:0]     B_IN_DAT_DLYs_i
+    , `in`tri0[ 9:0]    ADRs_i
     , `out`w  [ 8:0]    QQs_o
     , `out`w[7:0]       B_OUT_DAT_DLYs_o
 ) ;

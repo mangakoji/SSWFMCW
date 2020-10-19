@@ -2,7 +2,7 @@
 <Project>
     <Project_Created_Time>2020-03-14 09:23:24</Project_Created_Time>
     <TD_Version>4.4.433</TD_Version>
-    <UCode>11011001</UCode>
+    <UCode>10011111</UCode>
     <Name>TANG_PRiMER</Name>
     <HardWare>
         <Family>EG4</Family>
@@ -24,7 +24,7 @@
         <CREATEINDEX>auto</CREATEINDEX>
     </TOP_MODULE>
     <Project_Settings>
-        <Step_Last_Change>2020-03-29 22:50:22</Step_Last_Change>
+        <Step_Last_Change>2020-10-19 20:54:14</Step_Last_Change>
         <Current_Step>60</Current_Step>
         <Step_Status>true</Step_Status>
     </Project_Settings>
