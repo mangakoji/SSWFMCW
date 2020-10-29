@@ -1,5 +1,8 @@
 // TANG_PRiMER.v
 // AnLogic FPGA IDE Tang Dynasty
+//
+// KATr :refix pin move
+// KASw :pin move
 // KAJm : mod for SSWFMCW
 // K3Fu :1st
 
@@ -152,29 +155,33 @@ module TANG_PRiMER
             XRST_48M_Ds <= {XRST_48M_Ds,1'b1} ;
     `w XARST_48M = XRST_48M_Ds[2] ;
 
-    `w          T_TXSP_o        ;
+//    `w          T_TXSP_o        ;
     `w[11:0]    TX_COS_WAVEs_o  ;//ofs
     `w          MIC_CK_o        ;
     `w[1:0]     MICs_DAT_i      ;
-    `a MICs_DAT_i = {J2_02 , J2_04} ;
     `w[1:0]     HEAD_PHONEs_o  ;
     SSWFMCW
         SSWFMCW
         (
               .CK_i             ( CK48M             )//48MHz
             , .XARST_i          ( XARST_48M         )
-            , .TXSP_o           ( T_TXSP_o          )
+//            , .TXSP_o           ( T_TXSP_o          )
             , .TX_COS_WAVEs_o   ( TX_COS_WAVEs_o    )//ofs
             , .MIC_CK_o         ( MIC_CK_o          )
             , .MICs_DAT_i       ( MICs_DAT_i        )
             , .HEAD_PHONEs_o    ( HEAD_PHONEs_o     )
         ) 
     ;
+    `a J2_02 = MIC_CK_o ;
+    `a J2_04 = 1'b1 ;
+    `a MICs_DAT_i = {J2_08 , J2_06} ;
+    `a J2_10 = 1'b0 ;
+
     `w TX_SP_o = TX_COS_WAVEs_o[11] ;
     `a J3_02 = TX_SP_o ;
-    `a J2_06 = T_TXSP_o ;
-    `a {J2_08 , J2_10} = HEAD_PHONEs_o ;
-
+//    `a J2_06 = T_TXSP_o ;
+    `a {J3_06,J3_04} = HEAD_PHONEs_o ;
+    `a J3_08 = 1'b0 ;
 //    assign zLED_R_o = ~ tempo_led ;
 //    assign zLED_G_o = ~ test_score_led[0]   ;
 //    assign zLED_B_o = ~ timing_1ms ;
