@@ -180,7 +180,7 @@ module TANG_PRiMER
     `w TX_SP_o = TX_COS_WAVEs_o[11] ;
     `a J3_02 = TX_SP_o ;
 //    `a J2_06 = T_TXSP_o ;
-    `a {J3_04,J3_06} = HEAD_PHONEs_o ;
+    `a {J3_06,J3_04} = HEAD_PHONEs_o ;
     `a J3_08 = 1'b0 ;
 //    assign zLED_R_o = ~ tempo_led ;
 //    assign zLED_G_o = ~ test_score_led[0]   ;
