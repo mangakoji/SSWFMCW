@@ -2,6 +2,7 @@
 //  SSWFMCW()
 //
 //
+//KB1s :chg charp mode triangle -> up+blank
 //KAIu :add COS out
 //KAHs :may be done
 //KABu :start wt RTL
@@ -29,27 +30,23 @@ module SSWFMCW
         `e 
     `efunc
     // charp sweep
-    `lp C_ADD_MAX = 14331 ;
     `lp C_ADD_MIN = 13631 ;
+    `lp C_ADD_MAX = 14331 ;
+    `lp C_ADD_TOP = 2*C_ADD_MAX - C_ADD_MIN ;
     `r[13+12:0] ADD_Ds ;
-    `r       DN_XUP ;
+    `r       TX_EE ;
     `ack`xar
         `b          ADD_Ds <= C_ADD_MIN<<12 ;
-                    DN_XUP <= 1'b0 ;
+                    TX_EE <= 1'b1 ;
         `e else
-        `b  if(~DN_XUP) //2bc_000=2867200
-            `b  if(ADD_Ds >= {C_ADD_MAX,12'h0})//26'h37F_B000
-                `b  DN_XUP <= 1'b1 ;
-                    ADD_Ds <= ADD_Ds -1 ;
-                `e else
-                    ADD_Ds <= ADD_Ds + 1 ;
+        `b  
+            if(ADD_Ds >= {C_ADD_MAX,12'h0})//26'h37F_B000
+                TX_EE <= 1'b0 ;
+            if(ADD_Ds >= {C_ADD_TOP,12'h0})//26'h353_F00
+            `b  TX_EE <= 1'b1 ;
+                ADD_Ds <= {C_ADD_MIN,12'h0} ;
             `e else
-            `b  if(ADD_Ds <= {C_ADD_MIN,12'h0})//26'h353_F00
-                `b  DN_XUP <= 1'b0 ;
-                    ADD_Ds <= ADD_Ds + 1 ;
-                `e else
-                    ADD_Ds <= ADD_Ds - 1 ;
-            `e
+                ADD_Ds <= ADD_Ds + 1 ;
         `e
     // wave gen
     `r[23:0] WAVE_CTRs ;
@@ -68,17 +65,20 @@ module SSWFMCW
             , .SINs_o       ( COS_WAVEs         )//2's -h7FF 0 +h7FF
         )
     ;
-
+    `r`s[11:0] TX_COS_WAVEs ;
+    `ack`xar            TX_COS_WAVEs <= 0 ;
+        else if(TX_EE)  TX_COS_WAVEs <= COS_WAVEs ;
+        else            TX_COS_WAVEs <= 0 ;
     // TX SP DS ;
     `r[12:0]  TXSP_DSs; // /13
     `ack`xar    TXSP_DSs <= 13'b1_1000_0000_0000 ;
         else    TXSP_DSs <= 
                     {1'b0 , TXSP_DSs[11:0]} 
                     + 
-                    {1'b0 , ~COS_WAVEs[11] , COS_WAVEs[10:0]} 
+                    {1'b0 , ~TX_COS_WAVEs[11] , TX_COS_WAVEs[10:0]} 
                 ;
     `a TXSP_o = TXSP_DSs[12] ;
-    `a TX_COS_WAVEs_o = {COS_WAVEs[11],COS_WAVEs[10:0]} ;
+    `a TX_COS_WAVEs_o = {TX_COS_WAVEs[11],TX_COS_WAVEs[10:0]} ;
     
     // MIC_CLOCK
     `r[2:0]MIC_CTRs ;
