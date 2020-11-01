@@ -1,4 +1,4 @@
 // TIMESTAMP.v
-// Tue Jul 23 20:35:20 JST 2019
-// 5D36F0F8
-parameter [31:0] C_TIMESTAMP = 32'h5D36F0F8 ;
+// (2020, 11, 1, 21, 36, 12, 505225)
+// 0x5f9eabbc
+parameter [31:0] C_TIMESTAMP = 32'h5f9eabbc ;
