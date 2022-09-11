@@ -7,55 +7,64 @@
 //KAHs :may be done
 //KABu :start wt RTL
 
-`include "../MISC/define.vh"
-`ifndef FPGA_COMPILE
-    `include "../MISC/SIN_S11_S11.v"
-`endif
-`default_nettype none
+
+`ifndef SSWFMCW
+    `ifndef FPGA_COMPILE
+        `include "../MISC/SIN_S11_S11.v"
+    `endif
+    `include "../MISC/define.vh"
+    `default_nettype none
 module SSWFMCW
 (
-      `in`tri1       CK_i          //48MHz
-    , `in `tri1       XARST_i
-    , `out`w         TXSP_o
+      `in`tri1      CK_i          //48MHz
+    , `in`tri1      XARST_i
+    , `out`w        TXSP_o
     , `out`w[11:0]  TX_COS_WAVEs_o //ofs
-    , `out`w         MIC_CK_o
-    , `in`tri0[1:0]  MICs_DAT_i
-    , `out`w[1:0]    HEAD_PHONEs_o 
-) ;
+    , `out`w        MIC_CK_o
+    , `in`tri0[1:0] MICs_DAT_i
+    , `out`w[1:0]   HEAD_PHONEs_o 
+) ;             
     `func `int log2 ;
         `in `int value ;
         `b  value = value-1;
-            for (log2=0; value>0; log2=log2+1)
+            for(log2=0; value>0; log2=log2+1)
                 value = value>>1;
         `e 
     `efunc
     // charp sweep
+    // C_ADD_MAX - C_ADD_MIN = 700
     `lp C_ADD_MIN = 13631 ;
     `lp C_ADD_MAX = 14331 ;
     `lp C_ADD_TOP = 2*C_ADD_MAX - C_ADD_MIN ;
     `r[13+12:0] ADD_Ds ;
     `r       TX_EE ;
+    // cycle:TX_EE=fck/(C_ADD_MAX-C_ADD_MIN)/(1<<12)/2 = 8.37Hz
+    // target distance : 10.2m 
     `ack`xar
-        `b          ADD_Ds <= C_ADD_MIN<<12 ;
-                    TX_EE <= 1'b1 ;
+    `b      ADD_Ds <= C_ADD_MIN<<12 ;
+            TX_EE <= 1'b1 ;
+    `e else
+    `b  
+        if(ADD_Ds >= {C_ADD_MAX,12'h0})//26'h37F_B000
+                                        TX_EE <= 1'b0 ;
+        if(ADD_Ds >= {C_ADD_TOP,12'h0})//26'h353_F000
+        `b                              TX_EE <= 1'b1 ;
+                                        ADD_Ds <= {C_ADD_MIN,12'h0} ;
         `e else
-        `b  
-            if(ADD_Ds >= {C_ADD_MAX,12'h0})//26'h37F_B000
-                TX_EE <= 1'b0 ;
-            if(ADD_Ds >= {C_ADD_TOP,12'h0})//26'h353_F00
-            `b  TX_EE <= 1'b1 ;
-                ADD_Ds <= {C_ADD_MIN,12'h0} ;
-            `e else
-                ADD_Ds <= ADD_Ds + 1 ;
-        `e
+                                        `inc( ADD_Ds ) ;
+    `e
     // wave gen
     `r[23:0] WAVE_CTRs ;
     `ack
         `xar
             WAVE_CTRs <= 0 ;
         else
-            WAVE_CTRs <= WAVE_CTRs + ADD_Ds[25:12] ; //ADD_D14bit
+                                        //ADD_D14bit
+                                        WAVE_CTRs <= 
+                                            WAVE_CTRs + ADD_Ds[25:12] ; 
     // sin wave gen
+    // fmax = (fck>>12)*(C_ADD_MAX>>12) = 41.0kHz
+    // fmin = (fck>>12)*(C_ADD_MIN>>12) = 39.0kHz
     `w`s[11:0] COS_WAVEs ;
     SIN_S11_S11
         COS_TBL
@@ -67,16 +76,20 @@ module SSWFMCW
     ;
     `r`s[11:0] TX_COS_WAVEs ;
     `ack`xar            TX_COS_WAVEs <= 0 ;
-        else if(TX_EE)  TX_COS_WAVEs <= COS_WAVEs ;
-        else            TX_COS_WAVEs <= 0 ;
+        else if(TX_EE)                  TX_COS_WAVEs <= COS_WAVEs ;
+        else                            TX_COS_WAVEs <= 0 ;
     // TX SP DS ;
     `r[12:0]  TXSP_DSs; // /13
     `ack`xar    TXSP_DSs <= 13'b1_1000_0000_0000 ;
-        else    TXSP_DSs <= 
-                    {1'b0 , TXSP_DSs[11:0]} 
-                    + 
-                    {1'b0 , ~TX_COS_WAVEs[11] , TX_COS_WAVEs[10:0]} 
-                ;
+    else                                TXSP_DSs <= 
+                                            {1'b0 , TXSP_DSs[11:0]} 
+                                            + 
+                                            {
+                                                1'b0 
+                                                , ~ TX_COS_WAVEs[11] 
+                                                , TX_COS_WAVEs[10:0]
+                                            } 
+                                        ;
     `a TXSP_o = TXSP_DSs[12] ;
     `a TX_COS_WAVEs_o = {TX_COS_WAVEs[11],TX_COS_WAVEs[10:0]} ;
     
@@ -85,49 +98,59 @@ module SSWFMCW
     `r MIC_CK ;         //4.0MHz
     `r MIC_EE ;
     `ack`xar
-        `b  MIC_CTRs <= 0 ;
-            MIC_CK <= 1'b0 ;
-            MIC_EE <= 1'b0 ;
-        `e else
-        `b  if(&(MIC_CTRs|~(3'd5)))
-            `b  MIC_CTRs <= 0;
-                MIC_CK <= ~ MIC_CK ;
-            `e else
-                MIC_CTRs <= MIC_CTRs + 1 ;
-            MIC_EE <= (MIC_CTRs==3'd4) & ~MIC_CK ;
-        `e
+    `b  MIC_CTRs <= 0 ;
+        MIC_CK <= 1'b0 ;
+         MIC_EE <= 1'b0 ;
+    `e else
+    `b  
+        if(&(MIC_CTRs|~(3'd5)))
+       `b                               MIC_CTRs <= 0;
+                                        MIC_CK <= ~ MIC_CK ;
+       `e else                          `inc( MIC_CTRs ) ;
+
+                                        MIC_EE <= 
+                                            (MIC_CTRs==3'd4) 
+                                            & 
+                                            ~MIC_CK 
+                                        ;
+   `e
     `a MIC_CK_o = MIC_CK ;
     // HeadPhone DS
     `gen
-        genvar gi ;
-        for(gi=0;gi<2;gi=gi+1)
+        `gv gi ;
+        `fori(gi,2)
         `b :g_PHONE
             // MIC IF
             `r[1:0] MIC_Ds ;
-            `ack`xar            MIC_Ds <= 0 ;
-                else 
-                    if(MIC_EE)  MIC_Ds <= {MIC_Ds,MICs_DAT_i[gi]} ;
+            `ack`xar    MIC_Ds <= 0 ;
+             else 
+                if(MIC_EE)          MIC_Ds <= {MIC_Ds,MICs_DAT_i[gi]} ;
             `r[12:0] EP_DSs ;
-            `ack`xar            EP_DSs <= 13'b1_1000_0000_0000 ;
-                else            EP_DSs <= 
-                                    (MIC_Ds[1])
-                                    ?           
-                                        (   {1'b0 ,EP_DSs[11:0]} 
-                                            + 
-                                            {~COS_WAVEs[11],COS_WAVEs[10:0]}
+            `ack`xar    EP_DSs <= 13'b1_1000_0000_0000 ;
+            else
+                                    EP_DSs <= 
+                (MIC_Ds[1])
+                ?
+                                    ({1'b0 ,EP_DSs[11:0]} 
+                                        + 
+                                        {~COS_WAVEs[11],COS_WAVEs[10:0]}
                                         )
-                                    :   (   {1'b0 ,EP_DSs[11:0]} 
-                                            + 
-                                            {COS_WAVEs[11],~COS_WAVEs[10:0]}
-                                        )
+                :                   ({1'b0 ,EP_DSs[11:0]} 
+                                        + 
+                                        {COS_WAVEs[11],~COS_WAVEs[10:0]}
+                                    )
                                     ;
             `a HEAD_PHONEs_o[gi] = EP_DSs[12] ;
         `e
     `egen
 endmodule
+    `define SSWFMCW
+`endif
 
-
-`timescale 1ns/1ns
+`ifundef FPGA_COMPILE
+    `ifndef TB_SSWFMCW
+    `include "../MISC/define.vh"
+    `timescale 1ns/1ns
 module TB_SSWFMCW
 #(  parameter C_C=10.0
 )(
@@ -229,3 +252,6 @@ module TB_SSWFMCW
         $finish ;
     `e
 endmodule
+        `define TB_SSWFMCW
+    `endif
+`endif
